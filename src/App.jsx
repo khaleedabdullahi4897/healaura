@@ -328,4 +328,271 @@ export default function HealAura() {
     if (!window.speechSynthesis) return;
     if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
     const clean = results?.replace(/\*\*(.*?)\*\*/g, "$1") || "";
-    const u = new SpeechSynthesisUtterance(clean)
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang  = "en-US"; u.rate = 0.88; u.pitch = 1.05;
+    u.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(u);
+    setSpeaking(true);
+  };
+
+  const handleDownload = () => {
+    const clean = results?.replace(/\*\*(.*?)\*\*/g, "[$1]") || "";
+    const blob  = new Blob([
+      `HEALAURA — SYMPTOM ANALYSIS REPORT\nGenerated: ${new Date().toLocaleString()}\n\n${"━".repeat(40)}\n` +
+      `SYMPTOMS  : ${symptoms}\nAGE       : ${followUp.age||"Not specified"}\nDURATION  : ${followUp.duration}\nSEVERITY  : ${followUp.severity}/10\nCONDITIONS: ${followUp.conditions||"None"}\n${"━".repeat(40)}\n\n${clean}\n\n${"━".repeat(40)}\n` +
+      `DISCLAIMER: This is wellness guidance only — not a medical diagnosis.\nAlways consult a qualified healthcare professional.\n${"━".repeat(40)}`
+    ], { type:"text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a   = Object.assign(document.createElement("a"), { href:url, download:"HealAura-Report.txt" });
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const reset = () => {
+    window.speechSynthesis?.cancel(); setSpeaking(false);
+    setScreen("welcome"); setSymptoms(""); setStep(0);
+    setFollowUp({ age:"", duration:"", severity:5, conditions:"" });
+    setResults(null); setBodyRegion("none");
+  };
+
+  const P   = "#7C6BB0", PL = "#9B8DC4", ACC = "#E8936A", DNG = "#C0392B";
+  const bg  = dark
+    ? "linear-gradient(145deg,#0D0A1A 0%,#130F24 55%,#0A0814 100%)"
+    : "linear-gradient(145deg,#F0EDF8 0%,#EAE6F5 52%,#F5F0FF 100%)";
+  const surf = dark ? "#16122A" : "#FFFFFF";
+  const card = dark ? "#1E1A30" : "#F2EEF9";
+  const bord = dark ? "#2A2440" : "#D8D0EE";
+  const txt  = dark ? "#E0DBF0" : "#1E1830";
+  const mut  = dark ? "#8878B8" : "#7A7090";
+
+  const followSteps = [
+    { q:"How old are you?",                hint:"Age helps us give more accurate guidance.",        f:"age",        type:"input",   ph:"e.g. 28" },
+    { q:"When did your symptoms start?",   hint:"Select the option that best fits.",                f:"duration",   type:"options" },
+    { q:"How severe does it feel?",        hint:"1 = barely noticeable  ·  10 = worst imaginable", f:"severity",   type:"slider"  },
+    { q:"Any existing medical conditions?",hint:"e.g. diabetes, asthma — or type 'none'.",         f:"conditions", type:"input",   ph:"e.g. Asthma, or None" },
+  ];
+
+  const btnP = { background:`linear-gradient(135deg,${P},${PL})`, color:"#fff", border:"none", borderRadius:"12px", padding:"15px 28px", fontSize:"16px", fontFamily:"'Lora',Georgia,serif", fontWeight:"600", cursor:"pointer", width:"100%", marginTop:"18px" };
+  const btnS = { background:"transparent", border:`1.5px solid ${bord}`, color:mut, borderRadius:"12px", padding:"13px 28px", fontSize:"15px", fontFamily:"'DM Sans',sans-serif", cursor:"pointer", width:"100%", marginTop:"10px" };
+  const btnD = { background:`linear-gradient(135deg,${ACC},#F0A882)`, color:"#fff", border:"none", borderRadius:"12px", padding:"15px 28px", fontSize:"16px", fontFamily:"'Lora',Georgia,serif", fontWeight:"600", cursor:"pointer", width:"100%", marginTop:"10px" };
+
+  return (
+    <div style={{ minHeight:"100vh", background:bg, color:txt, fontFamily:"'Lora',Georgia,serif", transition:"background 0.4s,color 0.4s" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        @keyframes fadeUp    {from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes heartbeat {0%,100%{transform:scale(1)}14%{transform:scale(1.15)}28%{transform:scale(1)}42%{transform:scale(1.08)}70%{transform:scale(1)}}
+        @keyframes pulseRing {0%,100%{box-shadow:0 0 0 0 rgba(124,107,176,0.4)}50%{box-shadow:0 0 0 22px rgba(124,107,176,0)}}
+        @keyframes revealEKG {0%{clip-path:inset(0 100% 0 0);opacity:1}68%{clip-path:inset(0 0% 0 0);opacity:1}83%{opacity:0.35}100%{clip-path:inset(0 0% 0 0);opacity:0}}
+        @keyframes factIn    {from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .fu{animation:fadeUp 0.42s ease both}
+        .fi{animation:factIn 0.5s ease both}
+        .hl:hover{opacity:.87;transform:translateY(-2px);transition:opacity .2s,transform .2s}
+        .hf:hover{opacity:.7;transition:opacity .2s}
+        textarea:focus,input[type=text]:focus{border-color:${P}!important;outline:none;box-shadow:0 0 0 3px rgba(124,107,176,0.15)}
+        input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:${bord};outline:none}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:${P};cursor:pointer;box-shadow:0 2px 10px rgba(124,107,176,0.45)}
+        .opt{border:1.5px solid ${bord};border-radius:10px;padding:12px 14px;background:${card};color:${txt};font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;text-align:left;line-height:1.4}
+        .opt:hover{border-color:${P}}
+        .opt.sel{border-color:${P};background:rgba(124,107,176,0.13);color:${P};font-weight:600}
+        .li:hover{background:${card}}
+      `}</style>
+
+      {/* HEADER */}
+      <header style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"15px 24px", background:dark?"rgba(13,10,26,0.88)":"rgba(255,255,255,0.78)", backdropFilter:"blur(16px)", borderBottom:`1px solid ${bord}`, position:"sticky", top:0, zIndex:50 }}>
+        <div onClick={reset} style={{ cursor:"pointer", display:"flex", alignItems:"center", gap:"10px" }}>
+          <span style={{ fontSize:"24px", animation:"heartbeat 2.4s ease infinite" }}>💜</span>
+          <span style={{ fontFamily:"'Lora',serif", fontWeight:"700", fontSize:"22px", letterSpacing:"-0.4px" }}>
+            Heal<span style={{ color:ACC }}>Aura</span>
+          </span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+          <div style={{ position:"relative" }}>
+            <button onClick={() => setShowLang(!showLang)}
+              style={{ background:card, border:`1px solid ${bord}`, borderRadius:"8px", padding:"7px 12px", cursor:"pointer", color:txt, fontSize:"13px", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:"5px" }}>
+              {selLang?.flag} {selLang?.name} <span style={{ fontSize:"9px", opacity:.55 }}>▾</span>
+            </button>
+            {showLang && (
+              <div style={{ position:"absolute", top:"calc(100% + 5px)", right:0, background:surf, border:`1px solid ${bord}`, borderRadius:"12px", boxShadow:"0 14px 40px rgba(0,0,0,0.18)", zIndex:200, minWidth:"158px", overflow:"hidden" }}>
+                {LANGS.map(l => (
+                  <div key={l.code} className="li"
+                    style={{ padding:"10px 14px", cursor:"pointer", fontSize:"13px", fontFamily:"'DM Sans',sans-serif", color:txt, background:l.code===lang?card:"transparent", display:"flex", alignItems:"center", gap:"8px", fontWeight:l.code===lang?"600":"400" }}
+                    onClick={() => { setLang(l.code); setShowLang(false); }}>
+                    {l.flag} {l.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={() => setDark(!dark)}
+            style={{ background:dark?P:card, border:`1px solid ${bord}`, borderRadius:"20px", padding:"7px 14px", cursor:"pointer", color:dark?"#fff":txt, fontSize:"13px", fontFamily:"'DM Sans',sans-serif", fontWeight:"500", transition:"all .3s" }}>
+            {dark ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        </div>
+      </header>
+
+      <main style={{ maxWidth:"660px", margin:"0 auto", padding:"44px 22px 90px" }}>
+
+        {/* WELCOME */}
+        {screen === "welcome" && (
+          <div className="fu" style={{ textAlign:"center", paddingTop:"16px" }}>
+            <div style={{ width:"96px", height:"96px", borderRadius:"50%", background:`linear-gradient(135deg,${P},${PL})`, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 28px", fontSize:"44px", animation:"pulseRing 2.4s ease infinite" }}>🫀</div>
+            <p style={{ fontSize:"12px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"700", textTransform:"uppercase", letterSpacing:"2.5px", marginBottom:"14px" }}>Welcome to HealAura</p>
+            <h1 style={{ fontSize:"38px", fontWeight:"700", lineHeight:"1.22", marginBottom:"22px" }}>
+              Hey there. 👋<br/><span style={{ color:P }}>We're glad you're here.</span>
+            </h1>
+            <div style={{ background:surf, border:`1px solid ${bord}`, borderRadius:"18px", padding:"26px 28px", marginBottom:"32px", textAlign:"left" }}>
+              <p style={{ fontSize:"17px", fontFamily:"'DM Sans',sans-serif", lineHeight:"1.82", color:mut }}>
+                Whatever brought you here today — pausing to check on yourself is exactly the right thing to do.
+              </p>
+              <p style={{ fontSize:"17px", fontFamily:"'DM Sans',sans-serif", lineHeight:"1.82", color:mut, marginTop:"14px" }}>
+                HealAura will listen to your symptoms, ask a few simple questions, and give you a calm, clear answer. You're not alone in this. Let's figure it out together. 💜
+              </p>
+            </div>
+            <button className="hl" style={{ ...btnP, maxWidth:"300px", margin:"0 auto", fontSize:"17px", padding:"17px 32px" }} onClick={() => setScreen("input")}>
+              I'm Ready — Let's Go →
+            </button>
+            <div style={{ display:"flex", justifyContent:"center", flexWrap:"wrap", gap:"8px", marginTop:"36px" }}>
+              {[["🧠","Smart Analysis"],["🌍","8 Languages"],["🗣️","Voice Readout"],["🚨","Emergency Alert"],["🫀","Body Map"],["📄","Downloadable"]].map(([ic,lb]) => (
+                <div key={lb} style={{ background:surf, border:`1px solid ${bord}`, borderRadius:"20px", padding:"7px 15px", fontSize:"12px", fontFamily:"'DM Sans',sans-serif", color:mut, display:"flex", alignItems:"center", gap:"5px" }}>{ic} {lb}</div>
+              ))}
+            </div>
+            <p style={{ marginTop:"40px", fontSize:"11px", color:mut, fontFamily:"'DM Sans',sans-serif", opacity:.5, lineHeight:"1.65" }}>
+              HealAura is for informational guidance only — not a substitute for professional medical advice.
+            </p>
+          </div>
+        )}
+
+        {/* SYMPTOM INPUT */}
+        {screen === "input" && (
+          <div className="fu">
+            <div style={{ fontSize:"11px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"700", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Step 1 of 5</div>
+            <h2 style={{ fontSize:"30px", fontWeight:"700", marginBottom:"10px" }}>What's going on?</h2>
+            <p style={{ fontSize:"16px", color:mut, marginBottom:"26px", fontFamily:"'DM Sans',sans-serif", lineHeight:"1.65" }}>Describe how you're feeling in your own words. No medical jargon — just tell us what's happening.</p>
+            <textarea value={symptoms} onChange={e => setSymptoms(e.target.value)}
+              placeholder="e.g. I've had a throbbing headache since this morning and feel dizzy when I stand up. I also feel slightly nauseous..."
+              style={{ width:"100%", minHeight:"155px", background:surf, border:`2px solid ${bord}`, borderRadius:"14px", padding:"18px", fontSize:"15px", color:txt, fontFamily:"'DM Sans',sans-serif", resize:"vertical", lineHeight:"1.75", transition:"border-color .2s" }} />
+            <button className="hl" style={{ ...btnP, opacity:symptoms.trim()?1:.42 }} onClick={handleSymptomNext}>Continue →</button>
+            <button className="hf" style={btnS} onClick={reset}>← Back</button>
+          </div>
+        )}
+
+        {/* EMERGENCY */}
+        {screen === "emergency" && (
+          <div className="fu">
+            <div style={{ background:dark?"#1C0808":"#FEF2F2", border:`2px solid ${DNG}`, borderRadius:"18px", padding:"38px 28px", textAlign:"center" }}>
+              <div style={{ fontSize:"56px", marginBottom:"18px", animation:"heartbeat 1s ease infinite" }}>🚨</div>
+              <h2 style={{ fontSize:"26px", fontWeight:"700", color:DNG, marginBottom:"12px" }}>This sounds serious</h2>
+              <p style={{ fontSize:"16px", color:mut, fontFamily:"'DM Sans',sans-serif", marginBottom:"6px" }}>Your symptoms may require immediate medical attention.</p>
+              <p style={{ fontSize:"15px", color:mut, fontFamily:"'DM Sans',sans-serif", marginBottom:"26px" }}>Please don't wait — call emergency services right now:</p>
+              <div style={{ fontSize:"36px", fontWeight:"700", color:DNG, letterSpacing:"2px", marginBottom:"12px", fontFamily:"'Lora',serif" }}>{EMERGENCY[lang]?.n || EMERGENCY.en.n}</div>
+              <div style={{ fontSize:"16px", fontWeight:"600", color:DNG, marginBottom:"32px", fontFamily:"'DM Sans',sans-serif" }}>{EMERGENCY[lang]?.m || EMERGENCY.en.m}</div>
+              <button className="hf" style={{ ...btnS, borderColor:DNG, color:DNG, maxWidth:"220px", margin:"0 auto" }} onClick={reset}>Start Over</button>
+            </div>
+          </div>
+        )}
+
+        {/* FOLLOW-UP */}
+        {screen === "followup" && (() => {
+          const cur    = followSteps[step];
+          const isLast = step === followSteps.length - 1;
+          const ok     = cur.type==="slider"?true:cur.type==="options"?!!followUp[cur.f]:!!followUp[cur.f]?.trim();
+          return (
+            <div className="fu" key={step}>
+              <div style={{ display:"flex", gap:"6px", marginBottom:"30px" }}>
+                {followSteps.map((_,i) => <div key={i} style={{ flex:1, height:"4px", borderRadius:"2px", background:i<step?P:i===step?PL:bord, transition:"background .3s" }} />)}
+              </div>
+              <div style={{ fontSize:"11px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"700", textTransform:"uppercase", letterSpacing:"2px", marginBottom:"10px" }}>Step {step+2} of 5</div>
+              <h2 style={{ fontSize:"28px", fontWeight:"700", marginBottom:"10px" }}>{cur.q}</h2>
+              <p style={{ fontSize:"15px", color:mut, marginBottom:"24px", fontFamily:"'DM Sans',sans-serif" }}>{cur.hint}</p>
+              {cur.type==="input" && (
+                <input type="text" value={followUp[cur.f]} onChange={e => setFollowUp({...followUp,[cur.f]:e.target.value})} placeholder={cur.ph}
+                  style={{ width:"100%", background:surf, border:`2px solid ${bord}`, borderRadius:"12px", padding:"15px 18px", fontSize:"15px", color:txt, fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s" }} />
+              )}
+              {cur.type==="options" && (
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                  {DURATIONS.map(d => (
+                    <button key={d} className={`opt${followUp.duration===d?" sel":""}`} onClick={() => setFollowUp({...followUp,duration:d})}>
+                      {followUp.duration===d?"✓ ":""}{d}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {cur.type==="slider" && (
+                <div>
+                  <div style={{ textAlign:"center", fontSize:"58px", fontWeight:"700", color:P, marginBottom:"18px", fontFamily:"'Lora',serif" }}>
+                    {followUp.severity}<span style={{ fontSize:"22px", color:mut, fontWeight:"400" }}>/10</span>
+                  </div>
+                  <input type="range" min="1" max="10" value={followUp.severity} onChange={e => setFollowUp({...followUp,severity:Number(e.target.value)})} />
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:"13px", color:mut, fontFamily:"'DM Sans',sans-serif", marginTop:"10px" }}>
+                    <span>😌 Barely noticeable</span><span>😰 Worst ever</span>
+                  </div>
+                </div>
+              )}
+              <button className="hl" style={{ ...btnP, opacity:ok?1:.42 }} disabled={!ok} onClick={() => isLast?setScreen("loading"):setStep(step+1)}>
+                {isLast?"Analyse My Symptoms 🔍":"Continue →"}
+              </button>
+              <button className="hf" style={btnS} onClick={() => step===0?setScreen("input"):setStep(step-1)}>← Back</button>
+            </div>
+          );
+        })()}
+
+        {/* LOADING */}
+        {screen === "loading" && (
+          <div className="fu" style={{ textAlign:"center", paddingTop:"36px" }}>
+            <EKGLine />
+            <h2 style={{ fontSize:"24px", fontWeight:"700", marginTop:"28px", marginBottom:"14px" }}>Analysing your symptoms...</h2>
+            <div style={{ background:surf, border:`1px solid ${bord}`, borderRadius:"14px", padding:"20px 26px", marginBottom:"20px" }}>
+              <p style={{ fontSize:"16px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"500", fontStyle:"italic", lineHeight:"1.65" }}>"{QUOTES[quoteIdx]}"</p>
+            </div>
+            <div className="fi" key={factIdx} style={{ background:card, border:`1px solid ${bord}`, borderRadius:"12px", padding:"16px 20px" }}>
+              <p style={{ fontSize:"14px", fontFamily:"'DM Sans',sans-serif", color:mut, lineHeight:"1.65" }}>{FACTS[factIdx]}</p>
+            </div>
+          </div>
+        )}
+
+        {/* RESULTS */}
+        {screen === "results" && (
+          <div className="fu">
+            <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"8px" }}>
+              <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:`linear-gradient(135deg,${P},${PL})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:"14px", fontWeight:"700" }}>✓</div>
+              <span style={{ fontSize:"11px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"700", textTransform:"uppercase", letterSpacing:"2px" }}>Analysis Complete</span>
+            </div>
+            <h2 style={{ fontSize:"30px", fontWeight:"700", marginBottom:"8px" }}>Your HealAura Report</h2>
+            <p style={{ fontSize:"15px", color:mut, fontFamily:"'DM Sans',sans-serif", marginBottom:"26px" }}>Here's what we found based on everything you shared.</p>
+            <div style={{ display:"flex", gap:"20px", alignItems:"flex-start", background:surf, border:`1px solid ${bord}`, borderRadius:"16px", padding:"24px", marginBottom:"20px", flexWrap:"wrap" }}>
+              <BodyMap region={bodyRegion} dark={dark} />
+              <div style={{ flex:1, minWidth:"160px" }}>
+                <p style={{ fontSize:"11px", fontFamily:"'DM Sans',sans-serif", color:P, fontWeight:"700", textTransform:"uppercase", letterSpacing:"1.2px", marginBottom:"14px" }}>Symptom Summary</p>
+                {[
+                  ["🗣️","Symptoms",`"${symptoms.slice(0,55)}${symptoms.length>55?"...":""}"`],
+                  ["🕐","Duration", followUp.duration],
+                  ["📊","Severity", `${followUp.severity} / 10`],
+                  ["🎂","Age",      followUp.age||"Not specified"],
+                  followUp.conditions&&["💊","Conditions",followUp.conditions],
+                ].filter(Boolean).map(([ic,label,val])=>(
+                  <div key={label} style={{ marginBottom:"10px" }}>
+                    <div style={{ fontSize:"10px", fontFamily:"'DM Sans',sans-serif", color:mut, textTransform:"uppercase", letterSpacing:"0.6px" }}>{ic} {label}</div>
+                    <div style={{ fontSize:"14px", fontFamily:"'DM Sans',sans-serif", color:txt, fontWeight:"500", marginTop:"2px" }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ background:surf, border:`1px solid ${bord}`, borderRadius:"16px", padding:"28px", marginBottom:"16px" }}>
+              <ResultText text={results} primary={P} />
+            </div>
+            <button onClick={handleVoice}
+              style={{ background:speaking?`rgba(124,107,176,0.14)`:card, border:`1.5px solid ${speaking?P:bord}`, borderRadius:"12px", padding:"13px 20px", cursor:"pointer", color:speaking?P:txt, fontFamily:"'DM Sans',sans-serif", fontSize:"15px", fontWeight:"500", width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", transition:"all .2s" }}>
+              {speaking?"⏹️ Stop Reading Aloud":"🔊 Read Results Aloud"}
+            </button>
+            <button className="hl" style={btnD} onClick={handleDownload}>📄 Download Report</button>
+            <button className="hl" style={{ ...btnP, marginTop:"10px" }} onClick={reset}>Check New Symptoms</button>
+            <p style={{ textAlign:"center", fontSize:"11px", color:mut, fontFamily:"'DM Sans',sans-serif", marginTop:"22px", opacity:.48, lineHeight:"1.65" }}>
+              HealAura is wellness guidance only — not a medical diagnosis.<br/>Always consult a qualified healthcare professional.
+            </p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
